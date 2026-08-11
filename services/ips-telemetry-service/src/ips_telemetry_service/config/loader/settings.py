@@ -8,7 +8,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from src.ips_telemetry_service.config.generator_config import GeneratorConfig
+from src.ips_telemetry_service.config.telemetry_config import TelemetryConfig
 from src.ips_telemetry_service.config.loader.aggregated_source import AggregatedConfigSource
 from src.ips_telemetry_service.config.loader.paths import PROJECT_ROOT
 from src.ips_telemetry_service.config.logger_config import LoggerConfig
@@ -21,7 +21,7 @@ CONFIG_DIR = "config"
 
 class AppSettings(BaseSettings):
     service: ServiceConfig = Field(default_factory=ServiceConfig)
-    generator: GeneratorConfig = Field(default_factory=GeneratorConfig)
+    telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     logger: LoggerConfig = Field(default_factory=LoggerConfig)
 
     model_config = SettingsConfigDict(
@@ -50,7 +50,7 @@ class AppSettings(BaseSettings):
         4. .env файл (самый высокий приоритет)
         """
         filepath_service = cls._get_config_path(filename="service.yaml")
-        filepath_generator = cls._get_config_path(filename="generator.yaml")
+        filepath_telemetry = cls._get_config_path(filename="telemetry.yaml")
         filepath_logger = cls._get_config_path(filename="logger.yaml")
 
         return (
@@ -59,7 +59,7 @@ class AppSettings(BaseSettings):
                 settings_cls=settings_cls,
                 yaml_paths=[
                     filepath_service,
-                    filepath_generator,
+                    filepath_telemetry,
                     filepath_logger,
                 ],
                 env_file=str(PROJECT_ROOT / ".env"),

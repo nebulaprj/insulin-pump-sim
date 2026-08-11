@@ -1,7 +1,7 @@
 from fastapi import Request
 
-from src.ips_telemetry_service.service.generator_service import GeneratorService
+from src.ips_telemetry_service.service.telemetry_service import TelemetryService
 
 
-def get_generator_service(request: Request) -> GeneratorService:
-    return request.app.state.generator_service
+def get_telemetry_service(request: Request) -> TelemetryService:
+    return request.app.state.telemetry_service

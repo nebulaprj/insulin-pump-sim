@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class GeneratorConfig(BaseModel):
+class TelemetryConfig(BaseModel):
     backend_base_url: str = Field(description="Backend base URL")
     backend_port: int = Field(description="Backend port")
     backend_path: str = Field(description="Backend URL path")

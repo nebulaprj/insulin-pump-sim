@@ -7,11 +7,11 @@ from starlette.middleware.cors import CORSMiddleware
 from src.ips_telemetry_service.app.config.logger_setup import setup_logging
 from src.ips_telemetry_service.app.routers.scenario_router import router as scenario_router
 from src.ips_telemetry_service.config.loader.settings import app_settings
-from src.ips_telemetry_service.service.generator_service import GeneratorService
+from src.ips_telemetry_service.service.telemetry_service import TelemetryService
 
 logger = logging.getLogger(__name__)
 
-generator_service = GeneratorService()
+telemetry_service = TelemetryService()
 
 
 @asynccontextmanager
@@ -24,18 +24,18 @@ async def lifespan(app: FastAPI):
     )
     logger.info("Starting app...")
 
-    app.state.generator_service = generator_service
+    app.state.telemetry_service = telemetry_service
 
     logger.info("App is started")
 
     yield
 
     logger.info("Stopping app, resources cleanup")
-    await generator_service.shutdown()
+    await telemetry_service.shutdown()
 
 
 app = FastAPI(
-    title="Insulin Pump Data Generator",
+    title="Insulin Pump Telemetry Service",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
