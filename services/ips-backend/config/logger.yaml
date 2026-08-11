@@ -1,0 +1,4 @@
+logger:
+  path: ./logs/backend.log
+  level: INFO
+  write_to_file: false

@@ -1,0 +1,4 @@
+telemetry_client:
+  base_url: http://127.0.0.1
+  port: 8001
+  client_timeout_seconds: 5

@@ -1,0 +1,6 @@
+service:
+  host: 127.0.0.1
+  port: 8000
+  timeout_keep_alive: 300
+  timeout_graceful_shutdown: 300
+  reload: true
