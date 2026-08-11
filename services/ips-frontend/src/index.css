@@ -1,0 +1,365 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   Тема: дизайн-токены проекта (Tailwind v4, CSS-first конфиг)
+   ============================================================ */
+@theme {
+  /* Семантические цвета состояний */
+  --color-pump-green: #10b981;
+  --color-pump-green-dark: #059669;
+  --color-pump-green-light: #d1fae5;
+
+  --color-pump-red: #ef4444;
+  --color-pump-red-dark: #dc2626;
+  --color-pump-red-light: #fee2e2;
+
+  --color-pump-yellow: #f59e0b;
+  --color-pump-yellow-dark: #b45309;
+  --color-pump-yellow-light: #fef3c7;
+
+  --color-pump-blue: #3b82f6;
+  --color-pump-blue-dark: #2563eb;
+  --color-pump-blue-light: #dbeafe;
+
+  /* Нейтральные */
+  --color-pump-bg: #f1f5f9;
+  --color-pump-surface: #ffffff;
+  --color-pump-text: #0f172a;
+  --color-pump-text-muted: #64748b;
+  --color-pump-border: #e2e8f0;
+
+  /* Шрифты */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Анимации */
+  --animate-alert-pulse: alert-pulse 2s ease-in-out infinite;
+}
+
+@keyframes alert-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-pump-bg);
+  color: var(--color-pump-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Компоненты
+   ============================================================ */
+@layer components {
+
+  /* ---------- Layout ---------- */
+  .pump-dashboard {
+    @apply max-w-6xl mx-auto px-4 py-6 flex flex-col gap-6;
+  }
+
+  .pump-grid {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+  }
+
+  .pump-grid-main {
+    @apply lg:col-span-2 flex flex-col gap-6;
+  }
+
+  .pump-grid-side {
+    @apply flex flex-col gap-6;
+  }
+
+  /* ---------- Header ---------- */
+  .pump-header {
+    @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-pump-surface rounded-2xl px-6 py-4 shadow-sm border border-pump-border;
+  }
+
+  .pump-header-info {
+    @apply flex flex-col;
+  }
+
+  .pump-header-title {
+    @apply text-xl font-bold leading-tight;
+  }
+
+  .pump-header-subtitle {
+    @apply text-sm text-pump-text-muted;
+  }
+
+  .pump-header-controls {
+    @apply flex items-center gap-3;
+  }
+
+  /* ---------- Card ---------- */
+  .pump-card {
+    @apply bg-pump-surface rounded-2xl shadow-sm border border-pump-border overflow-hidden;
+  }
+
+  .pump-card-header {
+    @apply flex items-center justify-between gap-2 px-5 py-3 border-b border-pump-border;
+  }
+
+  .pump-card-title {
+    @apply text-xs font-semibold text-pump-text-muted uppercase tracking-wider;
+  }
+
+  .pump-card-body {
+    @apply p-5;
+  }
+
+  .pump-card-note {
+    @apply text-sm text-pump-text-muted m-0;
+  }
+
+  /* ---------- Glucose display ---------- */
+  .glucose-display {
+    @apply flex flex-col items-center justify-center gap-3 px-6 py-12 bg-pump-surface rounded-2xl shadow-sm border border-pump-border;
+  }
+
+  .glucose-value-row {
+    @apply flex items-end gap-2;
+  }
+
+  .glucose-value {
+    @apply text-7xl sm:text-8xl font-bold leading-none font-mono;
+  }
+
+  .glucose-unit {
+    @apply text-lg text-pump-text-muted pb-2;
+  }
+
+  .glucose-level-label {
+    @apply px-4 py-1.5 rounded-full text-sm font-semibold;
+  }
+
+  .glucose-value-normal { @apply text-pump-text; }
+  .glucose-value-low    { @apply text-pump-red; }
+  .glucose-value-high   { @apply text-pump-yellow-dark; }
+
+  .glucose-level-normal { @apply bg-pump-green-light text-pump-green-dark; }
+  .glucose-level-low    { @apply bg-pump-red-light text-pump-red-dark; }
+  .glucose-level-high   { @apply bg-pump-yellow-light text-pump-yellow-dark; }
+
+  /* ---------- Status badge ---------- */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .status-badge-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-badge-on        { @apply bg-pump-green-light text-pump-green-dark; }
+  .status-badge-on .status-badge-dot        { @apply bg-pump-green; }
+
+  .status-badge-off       { @apply bg-slate-100 text-slate-500; }
+  .status-badge-off .status-badge-dot       { @apply bg-slate-400; }
+
+  .status-badge-allowed   { @apply bg-pump-green-light text-pump-green-dark; }
+  .status-badge-allowed .status-badge-dot   { @apply bg-pump-green; }
+
+  .status-badge-blocked   { @apply bg-pump-red-light text-pump-red-dark; }
+  .status-badge-blocked .status-badge-dot   { @apply bg-pump-red; }
+
+  .status-badge-suspended { @apply bg-pump-yellow-light text-pump-yellow-dark; }
+  .status-badge-suspended .status-badge-dot { @apply bg-pump-yellow; }
+
+  .status-badge-warning   { @apply bg-pump-yellow-light text-pump-yellow-dark; }
+  .status-badge-warning .status-badge-dot   { @apply bg-pump-yellow; }
+
+  .status-badge-critical  { @apply bg-pump-red-light text-pump-red-dark; }
+  .status-badge-critical .status-badge-dot  { @apply bg-pump-red; }
+
+  /* ---------- Buttons ---------- */
+  .pump-btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .pump-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .pump-btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .pump-btn-primary { @apply bg-pump-blue text-white; }
+  .pump-btn-primary:hover:not(:disabled) { @apply bg-pump-blue-dark; }
+
+  .pump-btn-danger  { @apply bg-pump-red text-white; }
+  .pump-btn-danger:hover:not(:disabled)  { @apply bg-pump-red-dark; }
+
+  .pump-btn-success { @apply bg-pump-green text-white; }
+  .pump-btn-success:hover:not(:disabled) { @apply bg-pump-green-dark; }
+
+  .pump-btn-outline { @apply bg-transparent border border-pump-border text-pump-text; }
+  .pump-btn-outline:hover:not(:disabled) { @apply bg-slate-50; }
+
+  .pump-btn-full { @apply w-full; }
+
+  /* ---------- Power toggle ---------- */
+  .power-toggle {
+    @apply relative inline-flex items-center cursor-pointer;
+  }
+
+  .power-toggle-input {
+    @apply sr-only;
+  }
+
+  .power-toggle-track {
+    @apply w-12 h-7 bg-slate-300 rounded-full transition-colors duration-200;
+  }
+
+  .power-toggle-thumb {
+    @apply absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200;
+  }
+
+  .power-toggle-input:checked ~ .power-toggle-track {
+    @apply bg-pump-green;
+  }
+
+  .power-toggle-input:checked ~ .power-toggle-thumb {
+    @apply translate-x-5;
+  }
+
+  /* ---------- Message feed ---------- */
+  .message-feed {
+    @apply bg-pump-surface rounded-2xl shadow-sm border border-pump-border overflow-hidden;
+  }
+
+  .message-list {
+    @apply max-h-80 overflow-y-auto;
+  }
+
+  .message-item {
+    @apply flex items-start gap-3 px-5 py-3 border-b border-pump-border last:border-b-0;
+  }
+
+  .message-icon {
+    @apply flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base;
+  }
+
+  .message-icon-info     { @apply bg-pump-blue-light; }
+  .message-icon-warning  { @apply bg-pump-yellow-light; }
+  .message-icon-critical { @apply bg-pump-red-light animate-alert-pulse; }
+
+  .message-content {
+    @apply flex flex-col gap-0.5 min-w-0;
+  }
+
+  .message-text {
+    @apply text-sm font-medium;
+  }
+
+  .message-action {
+    @apply text-xs text-pump-text-muted;
+  }
+
+  /* ---------- Basal rate ---------- */
+  .basal-value-row {
+    @apply flex items-end gap-1;
+  }
+
+  .basal-value {
+    @apply text-4xl font-bold font-mono leading-none;
+  }
+
+  .basal-unit {
+    @apply text-lg text-pump-text-muted pb-1;
+  }
+
+  .basal-progress {
+    @apply w-full h-2 bg-slate-100 rounded-full overflow-hidden mt-4;
+  }
+
+  .basal-progress-bar {
+    @apply h-full bg-pump-blue rounded-full transition-all duration-300;
+  }
+
+  /* ---------- Bolus blocked ---------- */
+  .bolus-blocked {
+    @apply flex flex-col gap-4;
+  }
+
+  .bolus-blocked-text {
+    @apply text-sm text-pump-red-dark font-medium m-0;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state {
+    @apply text-center py-10 text-pump-text-muted text-sm;
+  }
+
+  /* ---------- Settings ---------- */
+  .settings-thresholds {
+    @apply flex flex-col gap-4;
+  }
+
+  .settings-row {
+    @apply flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4;
+  }
+
+  .settings-row-label {
+    @apply text-sm font-semibold text-pump-text sm:min-w-[200px] whitespace-nowrap;
+  }
+
+  .settings-row-inputs {
+    @apply flex items-center gap-3 flex-wrap;
+  }
+
+  .settings-input-group {
+    @apply flex items-center gap-2;
+  }
+
+  .settings-input-caption {
+    @apply text-sm text-pump-text-muted;
+  }
+
+  .settings-row-or {
+    @apply text-sm text-pump-text-muted;
+  }
+
+  .settings-input {
+    @apply w-24 px-2 py-1 rounded-lg border border-pump-border bg-white text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-pump-blue focus:border-transparent;
+  }
+
+  .settings-input-error {
+    @apply border-pump-red focus:ring-pump-red;
+  }
+
+  .settings-range-hint {
+    @apply text-xs text-pump-text-muted font-normal normal-case;
+  }
+
+  .settings-actions {
+    @apply flex gap-3 flex-wrap;
+  }
+
+  .settings-save-error {
+    @apply text-sm text-pump-red-dark font-medium m-0;
+  }
+
+  /* ---------- Scenarios list ---------- */
+  .scenarios-list {
+    @apply flex flex-col gap-3;
+  }
+
+  .scenario-item {
+    @apply flex items-center justify-between gap-4 p-4 rounded-xl border border-pump-border bg-pump-bg;
+  }
+
+  .scenario-item-info {
+    @apply flex flex-col gap-0.5 min-w-0;
+  }
+
+  .scenario-item-name {
+    @apply text-sm font-semibold font-mono break-all;
+  }
+
+  .scenario-item-description {
+    @apply text-sm text-pump-text-muted break-words;
+  }
+}
