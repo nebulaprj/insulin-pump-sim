@@ -8,10 +8,16 @@ class GlucoseLevel(str, Enum):
 
 
 class AlertLevel(str, Enum):
-    OFF = "off"
-    NOTIFICATION = "notification"
-    WARNING = "warning"
-    CRITICAL = "critical"
+    OFF = "off", ""
+    NOTIFICATION = "notification", "Оповещение"
+    WARNING = "warning", "Предупреждение"
+    CRITICAL = "critical", "Критический"
+
+    def __new__(cls, value: str, title: str):
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.title = title
+        return obj
 
 
 class BolusStatus(str, Enum):
