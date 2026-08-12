@@ -22,7 +22,7 @@ class ScenarioStep:
 
 @dataclass
 class Scenario:
-    steps: list[ScenarioStep] = field(default_factory=ScenarioStep)
+    steps: list[ScenarioStep] = field(default_factory=list)
     description: str = field(default="")
     _index: int = field(default=0, init=False, repr=False)
     _counter: int = field(default=0, init=False, repr=False)
