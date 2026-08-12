@@ -8,6 +8,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from src.ips_backend.config.app_config import AppConfig
 from src.ips_backend.config.loader.aggregated_source import AggregatedConfigSource
 from src.ips_backend.config.loader.paths import PROJECT_ROOT
 from src.ips_backend.config.logger_config import LoggerConfig
@@ -20,6 +21,7 @@ CONFIG_DIR = "config"
 
 
 class AppSettings(BaseSettings):
+    app: AppConfig = Field(default_factory=AppConfig)
     service: ServiceConfig = Field(default_factory=ServiceConfig)
     telemetry_client: TelemetryClientConfig = Field(default_factory=TelemetryClientConfig)
     logger: LoggerConfig = Field(default_factory=LoggerConfig)
@@ -49,6 +51,7 @@ class AppSettings(BaseSettings):
         3. Системные переменные окружения
         4. .env файл (самый высокий приоритет)
         """
+        filepath_app = cls._get_config_path(filename="app.yaml")
         filepath_service = cls._get_config_path(filename="service.yaml")
         filepath_telemetry_client = cls._get_config_path(filename="telemetry_client.yaml")
         filepath_logger = cls._get_config_path(filename="logger.yaml")
@@ -58,6 +61,7 @@ class AppSettings(BaseSettings):
             AggregatedConfigSource(
                 settings_cls=settings_cls,
                 yaml_paths=[
+                    filepath_app,
                     filepath_service,
                     filepath_telemetry_client,
                     filepath_logger,

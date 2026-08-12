@@ -35,10 +35,7 @@ class AggregatedConfigSource(PydanticBaseSettingsSource):
     PREFIX_MAPPING = {
         "APP_": "app",
         "SVC_": "service",
-        "LLM_": "llm",
-        "PVDR_": "provider",
-        "DB_": "db",
-        "RAG_": "rag",
+        "TELCL_": "telemetry_client",
         "LOG_": "logger",
     }
 
