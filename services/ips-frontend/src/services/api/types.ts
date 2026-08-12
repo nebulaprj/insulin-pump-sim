@@ -104,3 +104,33 @@ export interface ScenarioInfo {
   scenario_name: string
   description: string
 }
+
+/** Тревога помпы (ответ GET /alerts). */
+export interface AlertResponse {
+  level: AlertLevel
+  level_str: string
+  message: string
+  action_message: string
+  timestamp: string
+}
+
+/** Состояние помпы — GET /api/v1/pumps/{pump_id}/status */
+export interface PumpState {
+  is_on: boolean | null
+  current_glucose_value: number | null
+  glucose_level: GlucoseLevel | null
+  alert_level: AlertLevel | null
+  bolus_status: BolusStatus | null
+  basal_speed_pc: number | null
+  manual_action_required: boolean | null
+  message: string | null
+  action_message: string | null
+  alerts_count: number | null   // ← новое поле
+}
+
+/** Тело POST /api/v1/pumps/{pump_id}/telemetry */
+export interface TelemetryRequest {
+  glucose_value: number
+  glucose_unit: string
+  timestamp: string
+}

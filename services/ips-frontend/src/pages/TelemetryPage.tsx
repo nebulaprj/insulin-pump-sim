@@ -137,23 +137,28 @@ function ScenarioItem({
         <span className="scenario-item-name">{scenario.scenario_name}</span>
         <span className="scenario-item-description">{scenario.description}</span>
       </div>
+
       {isCurrent ? (
         <button
           type="button"
-          className="pump-btn pump-btn-danger"
+          className="scenario-control-btn scenario-control-btn-stop"
           onClick={onStop}
           disabled={isPending}
+          title="Остановить"
+          aria-label="Остановить сценарий"
         >
-          {isPending ? 'Остановка…' : 'Stop'}
+          ■
         </button>
       ) : (
         <button
           type="button"
-          className="pump-btn pump-btn-success"
+          className="scenario-control-btn scenario-control-btn-play"
           onClick={onStart}
           disabled={isPending}
+          title="Запустить"
+          aria-label="Запустить сценарий"
         >
-          {isPending ? 'Запуск…' : 'Play'}
+          ▶
         </button>
       )}
     </div>

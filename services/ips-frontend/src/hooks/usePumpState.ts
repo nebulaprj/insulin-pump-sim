@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { AlertLevel, BolusStatus } from '../services/api/types'
+import { AlertLevel, BolusStatus, GlucoseLevel } from '../services/api/types'
 import type { PumpState, PumpMessage, MessageSeverity } from '../services/api/types'
 import { getPumpStatus, resetPumpBlock } from '../services/api/api'
 import {
@@ -10,12 +10,16 @@ import {
 } from '../config/polling'
 import { getPumpId, onPumpIdChange } from '../config/pump'
 
+/**
+ * Мок-данные: показываются как fallback, когда бэкенд недоступен
+ * и актуальные данные ещё ни разу не были загружены.
+ */
 const MOCK_PUMP_STATE: PumpState = {
   is_on: true,
   current_glucose_value: 3.4,
-  glucose_level: 'low',
+  glucose_level: GlucoseLevel.LOW,
   alert_level: AlertLevel.CRITICAL,
-  bolus_status: 'blocked',
+  bolus_status: BolusStatus.BLOCKED,
   basal_speed_pc: 0,
   manual_action_required: true,
   message: 'Критическое понижение уровня глюкозы!',
@@ -38,11 +42,11 @@ function areMessagesEqual(a: PumpMessage, b: PumpMessage): boolean {
 }
 
 export function usePumpState() {
-  const [pumpState, setPumpState] = useState<PumpState>(MOCK_PUMP_STATE)
+  // Изначально данных нет. Мок применяется только при ошибке загрузки.
+  const [pumpState, setPumpState] = useState<PumpState | null>(null)
+  // Данные успешно загружены хотя бы раз (или применён мок при ошибке)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
-  // Отдельное состояние для bolus_status, которое имеет приоритет
-  // над pumpState.bolus_status. Используется для мгновенного обновления UI
-  // при разблокировке, без ожидания ответа от /status.
   const [bolusStatusOverride, setBolusStatusOverride] = useState<BolusStatus | null>(null)
 
   const [isResettingBlock, setIsResettingBlock] = useState(false)
@@ -50,26 +54,29 @@ export function usePumpState() {
 
   const [isDelivering, setIsDelivering] = useState(false)
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [apiError, setApiError] = useState<string | null>(null)
+  // isLoading изначально true — до первого ответа показываем экран загрузки
+  const [isLoading, setIsLoading] = useState(true)
 
   const [pumpId, setPumpId] = useState<string>(getPumpId())
 
   const errorCountRef = useRef(0)
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const prevMessagesRef = useRef<PumpMessage[]>([])
-
-  const [hasEverLoaded, setHasEverLoaded] = useState(false)
-  const isInitialLoading = isLoading && !hasEverLoaded
+  // Ref дублирует hasLoaded, чтобы быть доступным в замыкании fetchStatus
+  const hasLoadedRef = useRef(false)
 
   useEffect(() => {
     const unsubscribe = onPumpIdChange(newPumpId => {
       errorCountRef.current = 0
-      setApiError(null)
       setResetBlockMessage(null)
       setBolusStatusOverride(null)
       setPumpId(newPumpId)
       prevMessagesRef.current = []
+      // Сбрасываем данные при смене pump_id
+      setPumpState(null)
+      setHasLoaded(false)
+      hasLoadedRef.current = false
+      setIsLoading(true)
     })
     return unsubscribe
   }, [])
@@ -78,30 +85,27 @@ export function usePumpState() {
     setIsLoading(true)
     try {
       const state = await getPumpStatus()
+      // Успех: показываем актуальные данные
       setPumpState(state)
-      setApiError(null)
-      setHasEverLoaded(true)
+      setHasLoaded(true)
+      hasLoadedRef.current = true
       errorCountRef.current = 0
 
-      // Если бэкенд подтвердил, что bolus_status = allowed,
-      // сбрасываем override (он больше не нужен).
       if (state.bolus_status === BolusStatus.ALLOWED) {
         setBolusStatusOverride(null)
       }
     } catch (err) {
       errorCountRef.current += 1
-      const errorMessage = `Backend недоступен (попытка ${errorCountRef.current}/${MAX_ERROR_RETRIES})`
-      console.warn(errorMessage, err)
+      console.warn('Backend request failed:', err)
 
-      if (errorCountRef.current >= MAX_ERROR_RETRIES) {
-        setApiError(`${errorMessage}. Polling остановлен.`)
-      } else {
-        setApiError(`${errorMessage}. Используются мок-данные.`)
-        if (errorCountRef.current === 1) {
-          setPumpState(MOCK_PUMP_STATE)
-          setHasEverLoaded(true)
-        }
+      // Если актуальные данные ещё ни разу не загружались — показываем мок.
+      // Если данные уже были загружены ранее — оставляем их, не заменяя моком.
+      if (!hasLoadedRef.current) {
+        setPumpState(MOCK_PUMP_STATE)
+        setHasLoaded(true)
+        hasLoadedRef.current = true
       }
+      // Блок ошибки не показываем — apiError убран.
     } finally {
       setIsLoading(false)
     }
@@ -113,7 +117,6 @@ export function usePumpState() {
     let cancelled = false
 
     errorCountRef.current = 0
-    setApiError(null)
 
     async function poll() {
       if (cancelled) return
@@ -140,7 +143,13 @@ export function usePumpState() {
     }
   }, [fetchStatus, pumpId])
 
+  /**
+   * Сообщения формируются только из pumpState.
+   * Если данных нет — пустой список.
+   */
   const messages = useMemo<PumpMessage[]>(() => {
+    if (!pumpState) return []
+
     const text = pumpState.message?.trim() ?? ''
     if (!text) {
       prevMessagesRef.current = []
@@ -169,55 +178,36 @@ export function usePumpState() {
     prevMessagesRef.current = result
     return result
   }, [
-    pumpState.message,
-    pumpState.action_message,
-    pumpState.alert_level,
+    pumpState?.message,
+    pumpState?.action_message,
+    pumpState?.alert_level,
   ])
 
   const deliverBolus = useCallback(async () => {
     setIsDelivering(true)
-    setApiError(null)
     try {
       console.log('[Bolus] Deliver bolus requested')
       await new Promise(resolve => setTimeout(resolve, 500))
       await fetchStatus()
     } catch (err) {
       console.error('Failed to deliver bolus:', err)
-      setApiError('Ошибка при введении болюса')
     } finally {
       setIsDelivering(false)
     }
   }, [fetchStatus])
 
-  /**
-   * Снять блокировку болюса.
-   *
-   * При status === 'OK':
-   * 1. Очищаем resetBlockMessage
-   * 2. Устанавливаем bolusStatusOverride = 'allowed'
-   *    → UI обновляется МГНОВЕННО, без ожидания /status
-   * 3. Запускаем fetchStatus() для синхронизации с бэкендом
-   *    → Когда придёт ответ, bolusStatusOverride сбросится в null
-   */
   const resetBolusBlock = useCallback(async () => {
     setIsResettingBlock(true)
-    setApiError(null)
     try {
       const result = await resetPumpBlock()
 
       if (result.status === 'OK') {
-        // 1. Очищаем сообщение под кнопкой
         setResetBlockMessage(null)
-
-        // 2. Устанавливаем override — UI обновится мгновенно
         setBolusStatusOverride(BolusStatus.ALLOWED)
-
-        // 3. Синхронизируем с бэкендом (без await)
         fetchStatus().catch(err => {
           console.warn('Background status sync after reset failed:', err)
         })
       } else {
-        // FAILED: сохраняем сообщение бэкенда
         setResetBlockMessage(result.message)
       }
     } catch (err) {
@@ -228,22 +218,23 @@ export function usePumpState() {
     }
   }, [fetchStatus])
 
-  // Эффективный bolus_status: override имеет приоритет
-  const effectiveBolusStatus = bolusStatusOverride ?? pumpState.bolus_status
+  const effectiveBolusStatus =
+    bolusStatusOverride ?? pumpState?.bolus_status ?? null
+
+  const displayPumpState: PumpState | null = pumpState
+    ? { ...pumpState, bolus_status: effectiveBolusStatus }
+    : null
 
   return {
     pumpId,
-    pumpState: {
-      ...pumpState,
-      bolus_status: effectiveBolusStatus,
-    },
+    pumpState: displayPumpState,
+    hasLoaded,
     messages,
     deliverBolus,
     isDelivering,
     resetBolusBlock,
     isResettingBlock,
     resetBlockMessage,
-    isLoading: isInitialLoading,
-    apiError,
+    isLoading,
   }
 }

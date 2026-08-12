@@ -7,6 +7,8 @@ import type {
   SettingsResponse,
   SettingsRequest,
   ScenarioInfo,
+  AlertResponse,
+  TelemetryRequest,
 } from './types'
 
 /**
@@ -149,4 +151,59 @@ export async function startScenario(scenarioName: string): Promise<void> {
 export async function stopScenario(): Promise<void> {
   const pumpId = getPumpId()
   await api.post(`/pumps/${pumpId}/scenario/stop`)
+}
+
+/**
+ * GET /api/v1/pumps/{pump_id}/alerts
+ * Список активных тревог помпы.
+ */
+export async function getAlerts(): Promise<AlertResponse[]> {
+  const pumpId = getPumpId()
+  const response = await api.get<AlertResponse[]>(`/pumps/${pumpId}/alerts`)
+  return response.data
+}
+
+/**
+ * DELETE /api/v1/pumps/{pump_id}/alerts/all
+ * Очистить все тревоги. Возвращает обновлённый список тревог.
+ */
+export async function clearAllAlerts(): Promise<AlertResponse[]> {
+  const pumpId = getPumpId()
+  const response = await api.delete<AlertResponse[]>(`/pumps/${pumpId}/alerts/all`)
+  return response.data
+}
+
+/**
+ * DELETE /api/v1/pumps/{pump_id}/alerts
+ * Очистить конкретную тревогу. Тело запроса — данные тревоги.
+ * Возвращает обновлённый список тревог.
+ */
+export async function clearAlert(alert: AlertResponse): Promise<AlertResponse[]> {
+  const pumpId = getPumpId()
+  const response = await api.delete<AlertResponse[]>(`/pumps/${pumpId}/alerts`, {
+    data: {
+      level: alert.level,
+      level_str: alert.level_str,
+      message: alert.message,
+      action_message: alert.action_message,
+      timestamp: alert.timestamp,
+    },
+  })
+  return response.data
+}
+
+/**
+ * POST /api/v1/pumps/{pump_id}/telemetry
+ * Отправить телеметрию вручную.
+ *
+ * @param glucoseValue значение глюкозы из поля ввода
+ */
+export async function sendTelemetry(glucoseValue: number): Promise<void> {
+  const pumpId = getPumpId()
+  const body: TelemetryRequest = {
+    glucose_value: glucoseValue,
+    glucose_unit: 'mmol/L',
+    timestamp: new Date().toISOString(),
+  }
+  await api.post(`/pumps/${pumpId}/telemetry`, body)
 }
