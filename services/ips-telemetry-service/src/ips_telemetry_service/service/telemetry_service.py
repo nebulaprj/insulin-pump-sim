@@ -44,7 +44,7 @@ class TelemetryService:
 
         config = app_settings().telemetry
 
-        if self.is_running:
+        if self.is_running(pump_id):
             logger.info(f"{pump_id}: Stopping currently running telemetry generator...")
             await self.stop(pump_id)
             await asyncio.sleep(0.1)
@@ -65,7 +65,7 @@ class TelemetryService:
         if pump_id not in self._tasks:
             logger.info(f"{pump_id}: Telemetry generator is not registered for this pump, nothing to stop")
             return self.get_status(pump_id)
-        if not self.is_running:
+        if not self.is_running(pump_id):
             logger.info(f"{pump_id}: Telemetry generator is not running, nothing to stop")
             return self.get_status(pump_id)
 
