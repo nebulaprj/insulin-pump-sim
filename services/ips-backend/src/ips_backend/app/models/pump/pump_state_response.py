@@ -13,3 +13,4 @@ class PumpStateResponse(BaseModel):
     manual_action_required: bool | None = Field(default=None)
     message: str | None = Field(default=None)
     action_message: str | None = Field(default=None)
+    alerts_count: int = Field(default=0)

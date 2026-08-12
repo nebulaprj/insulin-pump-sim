@@ -2,9 +2,12 @@ import logging
 
 from fastapi import APIRouter, Response
 
+from src.ips_backend.app.models.pump.alert_request import AlertRequest
+from src.ips_backend.app.models.pump.alert_response import AlertResponse
 from src.ips_backend.app.models.pump.bolus_deliver_response import BolusDeliverResponse
 from src.ips_backend.app.models.pump.pump_state_response import PumpStateResponse
 from src.ips_backend.app.models.pump.reset_block_response import ResetBlockResponse
+from src.ips_backend.pump.data.alert import Alert
 from src.ips_backend.pump.data.status import BolusStatus
 from src.ips_backend.pump.pumps_registry import pumps_registry
 
@@ -17,6 +20,7 @@ logger = logging.getLogger(__name__)
 async def api_pump_get_status(pump_id: str):
     pump = pumps_registry.get_or_create_pump(pump_id)
     state = pump.state
+    alerts_count = len(pump.alerts_recorder.alerts)
     return PumpStateResponse(
         is_on=state.is_on,
         current_glucose_value=state.current_glucose_value,
@@ -27,7 +31,62 @@ async def api_pump_get_status(pump_id: str):
         manual_action_required=state.manual_action_required,
         message=state.message,
         action_message=state.action_message,
+        alerts_count=alerts_count,
     )
+
+
+@router.get("/pumps/{pump_id}/alerts", response_model=list[AlertResponse])
+async def api_pump_get_alerts(pump_id: str):
+    pump = pumps_registry.get_or_create_pump(pump_id)
+    alerts = pump.alerts_recorder.alerts
+    return [
+        AlertResponse(
+            level=alert.level,
+            level_str=alert.level.title,
+            message=alert.message,
+            action_message=alert.action_message,
+            timestamp=alert.timestamp,
+        ) for alert in alerts
+    ]
+
+
+@router.delete("/pumps/{pump_id}/alerts/all", response_model=list[AlertResponse])
+async def api_pump_delete_all_alerts(pump_id: str):
+    pump = pumps_registry.get_or_create_pump(pump_id)
+    await pump.alerts_recorder.delete_all()
+    alerts = pump.alerts_recorder.alerts
+    return [
+        AlertResponse(
+            level=alert.level,
+            level_str=alert.level.title,
+            message=alert.message,
+            action_message=alert.action_message,
+            timestamp=alert.timestamp,
+        ) for alert in alerts
+    ]
+
+
+@router.delete("/pumps/{pump_id}/alerts", response_model=list[AlertResponse])
+async def api_pump_delete_alert(pump_id: str, request: AlertRequest):
+    pump = pumps_registry.get_or_create_pump(pump_id)
+    await pump.alerts_recorder.delete(
+        Alert(
+            level=request.level,
+            message=request.message,
+            action_message=request.action_message,
+            timestamp=request.timestamp,
+        )
+    )
+    alerts = pump.alerts_recorder.alerts
+    return [
+        AlertResponse(
+            level=alert.level,
+            level_str=alert.level.title,
+            message=alert.message,
+            action_message=alert.action_message,
+            timestamp=alert.timestamp,
+        ) for alert in alerts
+    ]
 
 
 @router.post("/pumps/{pump_id}/bolus/deliver", response_model=BolusDeliverResponse)
