@@ -5,7 +5,6 @@ import { getPumpStatus, resetPumpBlock } from '../services/api/api'
 import {
   POLLING_INTERVAL_MS,
   POLLING_ENABLED,
-  MAX_ERROR_RETRIES,
   ERROR_RETRY_DELAY_MS,
 } from '../config/polling'
 import { getPumpId, onPumpIdChange } from '../config/pump'
@@ -24,6 +23,7 @@ const MOCK_PUMP_STATE: PumpState = {
   manual_action_required: true,
   message: 'Критическое понижение уровня глюкозы!',
   action_message: 'Подача инсулина заблокирована',
+  alerts_count: 0,
 }
 
 function alertLevelToSeverity(alertLevel: AlertLevel | null): MessageSeverity {
@@ -60,7 +60,7 @@ export function usePumpState() {
   const [pumpId, setPumpId] = useState<string>(getPumpId())
 
   const errorCountRef = useRef(0)
-  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevMessagesRef = useRef<PumpMessage[]>([])
   // Ref дублирует hasLoaded, чтобы быть доступным в замыкании fetchStatus
   const hasLoadedRef = useRef(false)

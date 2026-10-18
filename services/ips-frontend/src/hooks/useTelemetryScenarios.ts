@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { onPumpIdChange } from '../config/pump'
 import {
   getScenarios,
