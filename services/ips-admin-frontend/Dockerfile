@@ -7,7 +7,6 @@ RUN npm ci
 
 COPY index.html vite.config.ts tsconfig*.json ./
 COPY src/ ./src/
-COPY public/ ./public/
 RUN npm run build
 
 # Stage 2: production-образ с непривилегированным nginx
