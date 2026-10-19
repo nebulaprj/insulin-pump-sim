@@ -41,5 +41,4 @@ def setup_logging(
         root_logger.addHandler(file_handler)
 
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
