@@ -1,0 +1,47 @@
+{
+	admin 127.0.0.1:2019
+	http_port 8080
+	https_port 8443
+
+	# Внешние TCP 80/443 перенаправлены на 8080/8443 контейнера.
+	# HTTP/3 не включён: его UDP-порт в этой конфигурации не публикуется.
+	servers {
+		protocols h1 h2
+	}
+}
+
+(site_defaults) {
+	encode zstd gzip
+	log {
+		output stdout
+		format json
+	}
+}
+
+ips.alexgallax-edu.ru {
+	import site_defaults
+
+	# Swagger, ReDoc и схема основного backend должны попадать в FastAPI,
+	# а не в SPA fallback. Префиксы URL не меняются.
+	@backend_docs path /docs /docs/* /redoc /redoc/* /openapi.json
+	handle @backend_docs {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}
+
+ips-admin.alexgallax-edu.ru {
+	import site_defaults
+
+	reverse_proxy admin-frontend:8080
+}
+
+telemetry.alexgallax-edu.ru {
+	import site_defaults
+
+	# Swagger и API находятся на одном хосте, включая запросы Try it out.
+	reverse_proxy telemetry:8000
+}
