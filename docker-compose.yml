@@ -12,7 +12,6 @@ services:
   # Caddy — публичный HTTPS-вход на VDS
   # ============================================================
   caddy:
-    <<: *app-options
     image: caddy:2
     container_name: ips-caddy
     ports:
