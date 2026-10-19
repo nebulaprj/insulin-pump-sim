@@ -1,0 +1,158 @@
+x-app-options: &app-options
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ============================================================
+  # Caddy — публичный HTTPS-вход на VDS
+  # ============================================================
+  caddy:
+    <<: *app-options
+    build:
+      context: ./infrastructure/caddy
+      dockerfile: Dockerfile
+    image: ips-caddy:latest
+    container_name: ips-caddy
+    ports:
+      - "${CADDY_HTTP_PORT:-80}:8080"
+      - "${CADDY_HTTPS_PORT:-443}:8443"
+    volumes:
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ips-network
+    restart: unless-stopped
+
+  # ============================================================
+  # Backend — FastAPI симулятор инсулиновой помпы
+  # ============================================================
+  backend:
+    <<: *app-options
+    build:
+      context: ./services/ips-backend
+      dockerfile: Dockerfile
+    image: ips-backend:latest
+    container_name: ips-backend
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Service
+      - SVC_HOST=0.0.0.0
+      - SVC_PORT=8000
+      - SVC_TIMEOUT_KEEP_ALIVE=300
+      - SVC_RELOAD=false
+      # Доверяем proxy-заголовкам внутри Docker-сети и с loopback хоста.
+      # Прямой порт API нельзя публиковать на внешних интерфейсах.
+      - FORWARDED_ALLOW_IPS=*
+      # Telemetry Client (сервис генерации)
+      - TELCL_BASE_URL=http://telemetry
+      - TELCL_PORT=8000
+      - TELCL_CLIENT_TIMEOUT_SECONDS=10
+      # App
+      - APP_ALERTS_LIMIT=100
+      # Logger
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_PATH=/app/logs/backend.log
+      - LOG_WRITE_TO_FILE=false
+    networks:
+      - ips-network
+    restart: unless-stopped
+
+  # ============================================================
+  # Telemetry Service — генератор данных по сценариям
+  # ============================================================
+  telemetry:
+    <<: *app-options
+    build:
+      context: ./services/ips-telemetry-service
+      dockerfile: Dockerfile
+    image: ips-telemetry:latest
+    container_name: ips-telemetry
+    ports:
+      - "127.0.0.1:${TELEMETRY_PORT:-8001}:8000"
+    environment:
+      # Service
+      - SVC_HOST=0.0.0.0
+      - SVC_PORT=8000
+      - SVC_TIMEOUT_KEEP_ALIVE=300
+      - SVC_RELOAD=false
+      - FORWARDED_ALLOW_IPS=*
+      # Telemetry (куда отправлять данные)
+      - TEL_BACKEND_BASE_URL=http://backend
+      - TEL_BACKEND_PORT=8000
+      - TEL_BACKEND_PATH=api/v1/pumps/{pump_id}/telemetry
+      - TEL_CLIENT_TIMEOUT_SECONDS=10
+      - TEL_TELEMETRY_INTERVAL_SECONDS=${TELEMETRY_INTERVAL:-5}
+      - TEL_DRY_RUN=false
+      # Logger
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_PATH=/app/logs/telemetry.log
+      - LOG_WRITE_TO_FILE=false
+    networks:
+      - ips-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================================
+  # Frontend — React UI + nginx с прокси на backend
+  # ============================================================
+  frontend:
+    <<: *app-options
+    build:
+      context: ./services/ips-frontend
+      dockerfile: Dockerfile
+    image: ips-frontend:latest
+    container_name: ips-frontend
+    networks:
+      - ips-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================================
+  # Admin Frontend — React UI админ-панели
+  # ============================================================
+  admin-frontend:
+    <<: *app-options
+    build:
+      context: ./services/ips-admin-frontend
+      dockerfile: Dockerfile
+    image: ips-admin-frontend:latest
+    container_name: ips-admin-frontend
+    ports:
+      - "127.0.0.1:${ADMIN_FRONTEND_PORT:-8080}:8080"
+    networks:
+      - ips-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      telemetry:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Сертификаты и ACME-аккаунты Caddy должны переживать пересоздание контейнера.
+volumes:
+  caddy_data:
+  caddy_config:
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  ips-network:
+    driver: bridge
+    name: ips-network
